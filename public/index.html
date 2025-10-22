@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>DOCX → PDF Converter</title>
+  </head>
+  <body>
+    <h2>Convert DOCX to PDF</h2>
+    <div id="login-section">
+      <a href="/auth/login">Login with Microsoft</a>
+    </div>
+    <div id="upload-section" style="display: none">
+      <form
+        id="upload-form"
+        action="/convert"
+        method="POST"
+        enctype="multipart/form-data"
+      >
+        <input type="file" name="file" accept=".docx" required />
+        <button type="submit">Convert to PDF</button>
+      </form>
+      <br />
+      <a href="/logout">Logout</a>
+    </div>
+
+    <script>
+      fetch("/session-info")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.loggedIn) {
+            document.getElementById("login-section").style.display = "none";
+            document.getElementById("upload-section").style.display = "block";
+          }
+        });
+    </script>
+  </body>
+</html>
