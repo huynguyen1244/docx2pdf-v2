@@ -2,36 +2,89 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>DOCX → PDF Converter</title>
+    <title>DOCX ↔ PDF Converter</title>
+    <style>
+      .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+      .tab {
+        padding: 10px 15px;
+        border: 1px solid #ccc;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+      .tab.active {
+        background: #0078ff;
+        color: white;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
   </head>
+
   <body>
-    <h2>Convert DOCX to PDF</h2>
+    <h2>File Converter</h2>
+
     <div id="login-section">
       <a href="/auth/login">Login with Microsoft</a>
     </div>
-    <div id="upload-section" style="display: none">
-      <form
-        id="upload-form"
-        action="/convert"
-        method="POST"
-        enctype="multipart/form-data"
-      >
-        <input type="file" name="file" accept=".docx" required />
-        <button type="submit">Convert to PDF</button>
-      </form>
+
+    <div id="app-section" class="hidden">
+      <!-- Tabs -->
+      <div class="tabs">
+        <div class="tab active" data-tab="docx-to-pdf">DOCX → PDF</div>
+        <div class="tab" data-tab="pdf-to-docx">PDF → DOCX</div>
+      </div>
+
+      <!-- DOCX → PDF -->
+      <div id="docx-to-pdf" class="tab-content">
+        <form action="/docx-to-pdf" method="POST" enctype="multipart/form-data">
+          <input type="file" name="file" accept=".docx" required />
+          <button type="submit">Convert to PDF</button>
+        </form>
+      </div>
+
+      <!-- PDF → DOCX -->
+      <div id="pdf-to-docx" class="tab-content hidden">
+        <form action="/pdf-to-docx" method="POST" enctype="multipart/form-data">
+          <input type="file" name="file" accept=".pdf" required />
+          <button type="submit">Convert to DOCX</button>
+        </form>
+      </div>
+
       <br />
       <a href="/logout">Logout</a>
     </div>
 
     <script>
+      // Kiểm tra session đăng nhập
       fetch("/session-info")
         .then((res) => res.json())
         .then((data) => {
           if (data.loggedIn) {
-            document.getElementById("login-section").style.display = "none";
-            document.getElementById("upload-section").style.display = "block";
+            document.getElementById("login-section").classList.add("hidden");
+            document.getElementById("app-section").classList.remove("hidden");
           }
         });
+
+      // Xử lý tab
+      const tabs = document.querySelectorAll(".tab");
+      const contents = document.querySelectorAll(".tab-content");
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          // bỏ active cũ
+          tabs.forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+
+          // ẩn/hiện content
+          contents.forEach((c) => c.classList.add("hidden"));
+          document.getElementById(tab.dataset.tab).classList.remove("hidden");
+        });
+      });
     </script>
   </body>
 </html>

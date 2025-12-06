@@ -88,7 +88,7 @@ app.get("/", (req, res) => {
 });
 
 // --- Convert DOCX to PDF ---
-app.post("/convert", upload.single("file"), async (req, res) => {
+app.post("/docx-to-pdf", upload.single("file"), async (req, res) => {
   if (!req.file) return res.status(400).send("File required.");
   if (!req.session.accessToken)
     return res.status(401).send("Not authenticated.");
@@ -132,6 +132,7 @@ app.post("/convert", upload.single("file"), async (req, res) => {
     res.send(pdfRes.data);
 
     fs.unlinkSync(filePath);
+    // Xóa file trên OneDrive
     await axios.delete(
       `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}`,
       {
@@ -141,6 +142,66 @@ app.post("/convert", upload.single("file"), async (req, res) => {
   } catch (err) {
     console.error(err.response?.data || err.message);
     res.status(500).send("Error converting file.");
+  }
+});
+
+// --- Convert PDF to DOCX ---
+app.post("/pdf-to-docx", upload.single("file"), async (req, res) => {
+  if (!req.file) return res.status(400).send("File required.");
+  if (!req.session.accessToken)
+    return res.status(401).send("Not authenticated.");
+
+  const filePath = path.resolve(req.file.path);
+  const fileName = req.file.originalname;
+  const fileData = fs.readFileSync(filePath);
+
+  try {
+    // Upload PDF lên OneDrive
+    const uploadRes = await axios.put(
+      `https://graph.microsoft.com/v1.0/me/drive/root:/${fileName}:/content`,
+      fileData,
+      {
+        headers: {
+          Authorization: `Bearer ${req.session.accessToken}`,
+          "Content-Type": "application/pdf",
+        },
+      }
+    );
+
+    const itemId = uploadRes.data.id;
+
+    // Convert thành DOCX
+    const docxRes = await axios.get(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/content?format=docx`,
+      {
+        headers: { Authorization: `Bearer ${req.session.accessToken}` },
+        responseType: "arraybuffer",
+      }
+    );
+
+    res.set({
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "Content-Disposition": `attachment; filename="${fileName.replace(
+        /\.pdf$/,
+        ".docx"
+      )}"`,
+    });
+
+    res.send(docxRes.data);
+
+    fs.unlinkSync(filePath);
+
+    // Xóa file PDF trên OneDrive
+    await axios.delete(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}`,
+      {
+        headers: { Authorization: `Bearer ${req.session.accessToken}` },
+      }
+    );
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).send("Error converting PDF to DOCX.");
   }
 });
 
